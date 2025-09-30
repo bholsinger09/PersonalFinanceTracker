@@ -3,6 +3,15 @@
 // Debug page for OAuth configuration
 session_start();
 
+// Handle client-side logging
+if (isset($_GET['log']) && $_GET['log'] === 'client_click') {
+    $url = $_POST['url'] ?? $_GET['url'] ?? 'no_url';
+    error_log("CLIENT LOG: OAuth link clicked - URL: $url");
+    error_log("CLIENT LOG: Client ID: " . (preg_match('/client_id=([^&]+)/', $url, $matches) ? $matches[1] : 'not_found'));
+    error_log("CLIENT LOG: Redirect URI: " . (preg_match('/redirect_uri=([^&]+)/', $url, $matches) ? urldecode($matches[1]) : 'not_found'));
+    exit('Logged client click');
+}
+
 echo "<h1>OAuth Debug Information</h1>";
 echo "<h2>Environment Variables</h2>";
 echo "<pre>";
@@ -52,7 +61,7 @@ if ($clientId && $redirectUri) {
     echo "<p>Debug - URL preview: " . substr($url, 0, 100) . "...</p>";
     echo "<p><strong>Generated OAuth URL:</strong></p>";
     echo "<textarea readonly style='width: 100%; height: 100px;'>" . htmlspecialchars($url) . "</textarea><br><br>";
-    echo "<p><strong>Direct URL:</strong> <a href='" . htmlspecialchars($url) . "' target='_blank'>Test OAuth Link</a></p>";
+    echo "<p><strong>Direct URL:</strong> <a href='" . htmlspecialchars($url) . "' target='_blank' onclick='logOAuthClick(this.href)'>Test OAuth Link</a></p>";
     echo "<small>Click this link to test OAuth directly</small>";
 } else {
     echo "<p style='color: red;'>❌ Environment variables not available for OAuth URL generation</p>";
@@ -62,3 +71,19 @@ if ($clientId && $redirectUri) {
 
 echo "<br><br><a href='/'>Back to Login</a>";
 ?>
+
+<script>
+function logOAuthClick(url) {
+    console.log('OAuth Link Clicked - URL:', url);
+    console.log('OAuth Link Clicked - Client ID:', url.match(/client_id=([^&]+)/)?.[1]);
+    console.log('OAuth Link Clicked - Redirect URI:', decodeURIComponent(url.match(/redirect_uri=([^&]+)/)?.[1] || ''));
+    
+    // You can also send this to server for logging
+    fetch('/debug.php?log=client_click&url=' + encodeURIComponent(url), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    }).catch(err => console.log('Logging failed:', err));
+    
+    return true; // Allow the link to proceed
+}
+</script>

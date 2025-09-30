@@ -55,8 +55,10 @@ class OAuthGoogle
             ];
             $context  = stream_context_create($options);
             $result = file_get_contents($this->tokenUrl, false, $context);
+            error_log("OAUTH TOKEN RESPONSE: HTTP Code: " . (isset($http_response_header) ? substr($http_response_header[0], 9, 3) : 'unknown'));
+            error_log("OAUTH TOKEN RESPONSE: Length: " . strlen($result));
+            error_log("OAUTH TOKEN RESPONSE: Content: " . substr($result, 0, 200) . "...");
             $token = json_decode($result, true);
-            error_log("Token response: " . substr($result, 0, 200) . "...");
             if (isset($token['access_token'])) {
                 // Step 3: Get user info
                 $opts = [
