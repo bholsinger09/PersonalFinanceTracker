@@ -30,10 +30,16 @@ try {
 } catch (Exception $e) {
     echo "<p style='color: red;'>❌ Error loading OAuthGoogle class: " . $e->getMessage() . "</p>";
 }
-if (getenv('GOOGLE_CLIENT_ID') && getenv('OAUTH_REDIRECT_URI')) {
+echo "<h2>Test OAuth URL</h2>";
+$clientId = getenv('GOOGLE_CLIENT_ID');
+$redirectUri = getenv('OAUTH_REDIRECT_URI');
+echo "<p>Debug - Client ID: '" . $clientId . "' (length: " . strlen($clientId) . ")</p>";
+echo "<p>Debug - Redirect URI: '" . $redirectUri . "' (length: " . strlen($redirectUri) . ")</p>";
+if ($clientId && $redirectUri) {
+    echo "<p style='color: green;'>✅ Environment variables available for OAuth URL generation</p>";
     $params = [
-        'client_id' => getenv('GOOGLE_CLIENT_ID'),
-        'redirect_uri' => getenv('OAUTH_REDIRECT_URI'),
+        'client_id' => $clientId,
+        'redirect_uri' => $redirectUri,
         'response_type' => 'code',
         'scope' => 'email profile',
         'access_type' => 'online',
@@ -44,7 +50,9 @@ if (getenv('GOOGLE_CLIENT_ID') && getenv('OAUTH_REDIRECT_URI')) {
     echo "<a href='$url' target='_blank'>Test OAuth Link</a><br>";
     echo "<small>Click this link to test OAuth directly</small>";
 } else {
-    echo "<strong style='color: red;'>Environment variables not set properly!</strong>";
+    echo "<p style='color: red;'>❌ Environment variables not available for OAuth URL generation</p>";
+    echo "<p>Client ID empty: " . empty($clientId) . "</p>";
+    echo "<p>Redirect URI empty: " . empty($redirectUri) . "</p>";
 }
 
 echo "<br><br><a href='/'>Back to Login</a>";
