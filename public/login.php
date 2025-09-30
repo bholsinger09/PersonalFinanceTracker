@@ -1,4 +1,5 @@
 <?php
+
 // Login page for OAuth authentication
 session_start();
 

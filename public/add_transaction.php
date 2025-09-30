@@ -1,4 +1,5 @@
 <?php
+
 // Add transaction page
 session_start();
 if (!isset($_SESSION['user'])) {

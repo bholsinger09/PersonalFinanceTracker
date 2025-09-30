@@ -1,0 +1,24 @@
+{
+    "name": "bholsinger09/personal-finance-tracker",
+    "description": "A personal finance tracker built with pure PHP and OAuth authentication",
+    "type": "project",
+    "require": {
+        "php": ">=8.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.0",
+        "phpstan/phpstan": "^1.10",
+        "squizlabs/php_codesniffer": "^3.7"
+    },
+    "autoload": {
+        "psr-4": {
+            "FinanceTracker\\": "src/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit",
+        "lint": "phpcs --standard=phpcs.xml src/ public/",
+        "lint-fix": "phpcbf --standard=phpcs.xml src/ public/",
+        "analyze": "phpstan analyse --configuration=phpstan.neon"
+    }
+}
