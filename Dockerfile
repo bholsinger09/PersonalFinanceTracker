@@ -38,9 +38,9 @@ RUN mkdir -p database && chmod 755 database
 RUN chown -R www-data:www-data /var/www/html && \
     chmod -R 755 /var/www/html
 
-# Configure Apache to listen on PORT environment variable
-RUN echo "Listen \${PORT:-80}" > /etc/apache2/ports.conf && \
-    sed -i 's/80/\${PORT:-80}/g' /etc/apache2/sites-available/000-default.conf
+# Configure Apache document root to public directory
+RUN sed -i 's|/var/www/html|/var/www/html/public|g' /etc/apache2/sites-available/000-default.conf && \
+    sed -i 's|/var/www/html|/var/www/html/public|g' /etc/apache2/apache2.conf
 
 # Expose port (Render will set PORT env var)
 EXPOSE 80
