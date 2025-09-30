@@ -53,7 +53,7 @@ RUN echo '<VirtualHost *:80>\n\
 RUN echo '#!/bin/bash\n\
 PORT=${PORT:-80}\n\
 echo "Listen $PORT" > /etc/apache2/ports.conf\n\
-sed -i "s/*:80/*:$PORT/g" /etc/apache2/sites-available/000-default.conf\n\
+sed -i "s/80/$PORT/g" /etc/apache2/sites-available/000-default.conf\n\
 apache2-foreground' > /usr/local/bin/start-apache.sh && \
     chmod +x /usr/local/bin/start-apache.sh
 
