@@ -1,0 +1,15 @@
+.git
+.gitignore
+README.md
+.phpunit.cache
+tests/
+.phpunit.result.cache
+coverage/
+.github/
+.env
+.env.example
+phpcs.xml
+phpstan.neon
+phpunit.xml
+Procfile
+render.yaml
