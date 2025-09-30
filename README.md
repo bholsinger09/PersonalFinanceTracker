@@ -54,10 +54,12 @@ php -S localhost:8000 -t public/
 4. Create OAuth 2.0 credentials
 5. Add your domain to authorized origins:
    - For local development: `http://localhost:8000`
-   - For production: `https://your-app-name.herokuapp.com`
+   - For Heroku: `https://your-app-name.herokuapp.com`
+   - For Render: `https://your-app-name.onrender.com`
 6. Add redirect URIs:
    - `http://localhost:8000/oauth.php`
    - `https://your-app-name.herokuapp.com/oauth.php`
+   - `https://your-app-name.onrender.com/oauth.php`
 
 ### Running Tests
 
@@ -113,6 +115,30 @@ git push heroku main
 ```bash
 heroku open
 ```
+
+### Render Deployment (Free Tier Available)
+
+1. **Connect your GitHub repository** to Render:
+   - Go to [Render Dashboard](https://dashboard.render.com)
+   - Click "New" → "Web Service"
+   - Connect your GitHub account and select this repository
+
+2. **Configure the service**:
+   - **Name**: Choose a unique name for your app
+   - **Runtime**: PHP
+   - **Build Command**: `composer install --no-dev --optimize-autoloader`
+   - **Start Command**: `apache2-foreground`
+   - **Root Directory**: `public`
+
+3. **Set environment variables**:
+   - `GOOGLE_CLIENT_ID`: Your Google OAuth Client ID
+   - `GOOGLE_CLIENT_SECRET`: Your Google OAuth Client Secret
+   - `OAUTH_REDIRECT_URI`: `https://your-app-name.onrender.com/oauth.php`
+
+4. **Deploy**:
+   - Render will automatically build and deploy your app
+   - Your app will be available at `https://your-app-name.onrender.com`
+   - **Note**: The `database/` directory needs to be writable for SQLite database operations
 
 ### Manual Server Deployment
 
