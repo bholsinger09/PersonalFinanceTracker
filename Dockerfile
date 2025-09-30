@@ -19,6 +19,9 @@ COPY composer.json composer.lock ./
 COPY src/ src/
 COPY public/ public/
 
+# Create database directory before composer install (needed for post-install-cmd)
+RUN mkdir -p database && chmod 755 database
+
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
