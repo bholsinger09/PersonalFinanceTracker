@@ -49,9 +49,10 @@ if ($clientId && $redirectUri) {
     echo "<p>Debug - Query string: '" . $queryString . "' (length: " . strlen($queryString) . ")</p>";
     $url = 'https://accounts.google.com/o/oauth2/v2/auth?' . $queryString;
     echo "<p>Debug - Full URL length: " . strlen($url) . "</p>";
+    echo "<p>Debug - URL preview: " . substr($url, 0, 100) . "...</p>";
     echo "<p><strong>Generated OAuth URL:</strong></p>";
-    echo "<textarea readonly style='width: 100%; height: 100px;'>$url</textarea><br><br>";
-    echo "<a href='$url' target='_blank'>Test OAuth Link</a><br>";
+    echo "<textarea readonly style='width: 100%; height: 100px;'>" . htmlspecialchars($url) . "</textarea><br><br>";
+    echo "<p><strong>Direct URL:</strong> <a href='" . htmlspecialchars($url) . "' target='_blank'>Test OAuth Link</a></p>";
     echo "<small>Click this link to test OAuth directly</small>";
 } else {
     echo "<p style='color: red;'>❌ Environment variables not available for OAuth URL generation</p>";
