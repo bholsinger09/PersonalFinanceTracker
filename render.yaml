@@ -5,6 +5,7 @@ services:
     buildCommand: composer install --no-dev --optimize-autoloader
     startCommand: apache2-foreground
     rootDir: public
+    plan: free
     envVars:
       - key: GOOGLE_CLIENT_ID
         sync: false
