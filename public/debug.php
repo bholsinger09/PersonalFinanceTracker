@@ -39,6 +39,11 @@ try {
 } catch (Exception $e) {
     echo "<p style='color: red;'>❌ Error loading OAuthGoogle class: " . $e->getMessage() . "</p>";
 }
+echo "<h2>Quick Tests</h2>";
+echo "<p><a href='/oauth.php' target='_blank'>Test oauth.php endpoint</a> (should redirect to login)</p>";
+echo "<p><a href='/basic.php' target='_blank'>Test basic.php</a> (should show PHP test)</p>";
+echo "<p><a href='/test.php' target='_blank'>Test test.php</a> (should show PHP info)</p>";
+
 echo "<h2>Test OAuth URL</h2>";
 $clientId = getenv('GOOGLE_CLIENT_ID');
 $redirectUri = getenv('OAUTH_REDIRECT_URI');
@@ -62,6 +67,7 @@ if ($clientId && $redirectUri) {
     echo "<p><strong>Generated OAuth URL:</strong></p>";
     echo "<textarea readonly style='width: 100%; height: 100px;'>" . htmlspecialchars($url) . "</textarea><br><br>";
     echo "<p><strong>Direct URL:</strong> <a href='" . htmlspecialchars($url) . "' target='_blank' onclick='logOAuthClick(this.href)'>Test OAuth Link</a></p>";
+    echo "<p><button onclick='testFunction()'>Test JavaScript</button></p>";
     echo "<small>Click this link to test OAuth directly</small>";
 } else {
     echo "<p style='color: red;'>❌ Environment variables not available for OAuth URL generation</p>";
@@ -73,17 +79,44 @@ echo "<br><br><a href='/'>Back to Login</a>";
 ?>
 
 <script>
-function logOAuthClick(url) {
-    console.log('OAuth Link Clicked - URL:', url);
-    console.log('OAuth Link Clicked - Client ID:', url.match(/client_id=([^&]+)/)?.[1]);
-    console.log('OAuth Link Clicked - Redirect URI:', decodeURIComponent(url.match(/redirect_uri=([^&]+)/)?.[1] || ''));
-    
-    // You can also send this to server for logging
-    fetch('/debug.php?log=client_click&url=' + encodeURIComponent(url), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-    }).catch(err => console.log('Logging failed:', err));
-    
-    return true; // Allow the link to proceed
+console.log('Debug page JavaScript loaded successfully');
+
+// Test basic function
+function testFunction() {
+    console.log('testFunction called');
 }
+
+testFunction();
+
+function logOAuthClick(url) {
+    console.log('=== OAUTH LINK CLICKED ===');
+    console.log('Full URL:', url);
+    
+    try {
+        const urlObj = new URL(url);
+        console.log('Client ID:', urlObj.searchParams.get('client_id'));
+        console.log('Redirect URI:', decodeURIComponent(urlObj.searchParams.get('redirect_uri') || ''));
+        console.log('Response Type:', urlObj.searchParams.get('response_type'));
+        console.log('Scope:', urlObj.searchParams.get('scope'));
+    } catch (e) {
+        console.error('URL parsing error:', e);
+    }
+    
+    // Send to server for logging
+    fetch('/debug.php?log=client_click', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: url, timestamp: new Date().toISOString() })
+    }).then(response => {
+        console.log('Client click logged to server, status:', response.status);
+    }).catch(err => {
+        console.error('Failed to log to server:', err);
+    });
+    
+    console.log('=== END OAUTH LOG ===');
+    return true;
+}
+
+// Log page load
+console.log('Debug page fully loaded');
 </script>
