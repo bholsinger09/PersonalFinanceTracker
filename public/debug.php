@@ -44,7 +44,11 @@ if ($clientId && $redirectUri) {
         'scope' => 'email profile',
         'access_type' => 'online',
     ];
-    $url = 'https://accounts.google.com/o/oauth2/v2/auth?' . http_build_query($params);
+    echo "<p>Debug - Params array: " . json_encode($params) . "</p>";
+    $queryString = http_build_query($params);
+    echo "<p>Debug - Query string: '" . $queryString . "' (length: " . strlen($queryString) . ")</p>";
+    $url = 'https://accounts.google.com/o/oauth2/v2/auth?' . $queryString;
+    echo "<p>Debug - Full URL length: " . strlen($url) . "</p>";
     echo "<p><strong>Generated OAuth URL:</strong></p>";
     echo "<textarea readonly style='width: 100%; height: 100px;'>$url</textarea><br><br>";
     echo "<a href='$url' target='_blank'>Test OAuth Link</a><br>";
