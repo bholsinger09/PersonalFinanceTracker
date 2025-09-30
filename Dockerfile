@@ -15,13 +15,17 @@ WORKDIR /var/www/html
 # Copy composer files first for better caching
 COPY composer.json composer.lock ./
 
+# Copy source code (needed for post-install-cmd)
+COPY src/ src/
+COPY public/ public/
+
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 # Install PHP dependencies
 RUN composer install --no-dev --optimize-autoloader
 
-# Copy application code
+# Copy remaining application code
 COPY . .
 
 # Create database directory and set permissions
