@@ -19,6 +19,15 @@
         "test": "phpunit",
         "lint": "phpcs --standard=phpcs.xml src/ public/",
         "lint-fix": "phpcbf --standard=phpcs.xml src/ public/",
-        "analyze": "phpstan analyse --configuration=phpstan.neon"
+        "analyze": "phpstan analyse --configuration=phpstan.neon",
+        "ci": [
+            "@lint",
+            "@analyze",
+            "@test"
+        ],
+        "post-install-cmd": [
+            "@setup-db"
+        ],
+        "setup-db": "php -r \"require_once 'vendor/autoload.php'; FinanceTracker\\Database::getConnection(); echo 'Database initialized.\\n';\""
     }
 }

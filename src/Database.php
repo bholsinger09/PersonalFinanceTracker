@@ -13,7 +13,30 @@ use PDOException;
 class Database
 {
     private static ?PDO $pdo = null;
-    private static string $dbPath = __DIR__ . '/../database/finance_tracker.db';
+    private static string $dbPath;
+
+    /**
+     * Initialize database path from environment or default
+     */
+    private static function initializeDbPath(): void
+    {
+        if (!isset(self::$dbPath)) {
+            // Check for DATABASE_URL (Heroku style)
+            $databaseUrl = getenv('DATABASE_URL');
+            if ($databaseUrl) {
+                // Parse DATABASE_URL for SQLite
+                $parsedUrl = parse_url($databaseUrl);
+                if ($parsedUrl && isset($parsedUrl['path'])) {
+                    self::$dbPath = $parsedUrl['path'];
+                } else {
+                    self::$dbPath = $databaseUrl;
+                }
+            } else {
+                // Default local path
+                self::$dbPath = __DIR__ . '/../database/finance_tracker.db';
+            }
+        }
+    }
 
     /**
      * Get database connection
@@ -21,6 +44,7 @@ class Database
     public static function getConnection(): PDO
     {
         if (self::$pdo === null) {
+            self::initializeDbPath();
             try {
                 self::$pdo = new PDO('sqlite:' . self::$dbPath);
                 self::$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
