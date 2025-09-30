@@ -20,7 +20,16 @@ if (isset($_SESSION['user'])) {
 }
 echo "</pre>";
 
-echo "<h2>Test OAuth URL</h2>";
+echo "<h2>OAuth Class Test</h2>";
+require_once '../vendor/autoload.php';
+try {
+    $oauth = new \FinanceTracker\OAuthGoogle();
+    echo "<p style='color: green;'>✅ OAuthGoogle class loaded successfully</p>";
+    echo "<p>Client ID from class: " . (substr($oauth->getClientId(), 0, 10) ?? 'N/A') . "...</p>";
+    echo "<p>Redirect URI from class: " . ($oauth->getRedirectUri() ?? 'N/A') . "</p>";
+} catch (Exception $e) {
+    echo "<p style='color: red;'>❌ Error loading OAuthGoogle class: " . $e->getMessage() . "</p>";
+}
 if (getenv('GOOGLE_CLIENT_ID') && getenv('OAUTH_REDIRECT_URI')) {
     $params = [
         'client_id' => getenv('GOOGLE_CLIENT_ID'),
@@ -30,6 +39,8 @@ if (getenv('GOOGLE_CLIENT_ID') && getenv('OAUTH_REDIRECT_URI')) {
         'access_type' => 'online',
     ];
     $url = 'https://accounts.google.com/o/oauth2/v2/auth?' . http_build_query($params);
+    echo "<p><strong>Generated OAuth URL:</strong></p>";
+    echo "<textarea readonly style='width: 100%; height: 100px;'>$url</textarea><br><br>";
     echo "<a href='$url' target='_blank'>Test OAuth Link</a><br>";
     echo "<small>Click this link to test OAuth directly</small>";
 } else {

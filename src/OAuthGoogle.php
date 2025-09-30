@@ -78,4 +78,14 @@ class OAuthGoogle
             }
         }
     }
+
+    public function getClientId(): string
+    {
+        return $this->clientId;
+    }
+
+    public function getRedirectUri(): string
+    {
+        return $this->redirectUri;
+    }
 }
