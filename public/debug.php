@@ -79,44 +79,31 @@ echo "<br><br><a href='/'>Back to Login</a>";
 ?>
 
 <script>
-console.log('Debug page JavaScript loaded successfully');
+// Test 1: Basic alert
+alert('JavaScript is working!');
 
-// Test basic function
+// Test 2: Console logs
+console.log('=== DEBUG PAGE LOADED ===');
+console.log('Timestamp:', new Date().toISOString());
+console.log('User Agent:', navigator.userAgent);
+
+// Test 3: Function call
 function testFunction() {
-    console.log('testFunction called');
+    console.log('testFunction executed successfully');
+    alert('testFunction called!');
 }
 
+console.log('About to call testFunction...');
 testFunction();
+console.log('testFunction call completed');
 
+// Test 4: OAuth click handler
 function logOAuthClick(url) {
-    console.log('=== OAUTH LINK CLICKED ===');
-    console.log('Full URL:', url);
-    
-    try {
-        const urlObj = new URL(url);
-        console.log('Client ID:', urlObj.searchParams.get('client_id'));
-        console.log('Redirect URI:', decodeURIComponent(urlObj.searchParams.get('redirect_uri') || ''));
-        console.log('Response Type:', urlObj.searchParams.get('response_type'));
-        console.log('Scope:', urlObj.searchParams.get('scope'));
-    } catch (e) {
-        console.error('URL parsing error:', e);
-    }
-    
-    // Send to server for logging
-    fetch('/debug.php?log=client_click', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: url, timestamp: new Date().toISOString() })
-    }).then(response => {
-        console.log('Client click logged to server, status:', response.status);
-    }).catch(err => {
-        console.error('Failed to log to server:', err);
-    });
-    
-    console.log('=== END OAUTH LOG ===');
+    console.log('=== OAUTH LINK CLICK DETECTED ===');
+    console.log('URL:', url);
+    alert('OAuth link clicked: ' + url.substring(0, 50) + '...');
     return true;
 }
 
-// Log page load
-console.log('Debug page fully loaded');
+console.log('=== DEBUG PAGE SETUP COMPLETE ===');
 </script>
