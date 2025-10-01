@@ -12,11 +12,22 @@ if (!$user) {
 }
 
 $userId = $user['id'] ?? null;
-if (!$userId) {
-    // Try to find user ID from database using email
-    $sql = "SELECT id FROM users WHERE email = ?";
-    $result = \FinanceTracker\Database::query($sql, [$user['email']]);
-    $userId = $result[0]['id'] ?? null;
+
+// If we don't have a database user ID, try to get it from the database
+if (!$userId || !is_numeric($userId)) {
+    // Try to find user ID from database using email or google_id
+    $email = $user['email'] ?? null;
+    $googleId = $user['google_id'] ?? $user['id'] ?? null;
+    
+    if ($email) {
+        $sql = "SELECT id FROM users WHERE email = ?";
+        $result = \FinanceTracker\Database::query($sql, [$email]);
+        $userId = $result[0]['id'] ?? null;
+    } elseif ($googleId) {
+        $sql = "SELECT id FROM users WHERE google_id = ?";
+        $result = \FinanceTracker\Database::query($sql, [$googleId]);
+        $userId = $result[0]['id'] ?? null;
+    }
 }
 
 $currentBalance = 0.0;

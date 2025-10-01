@@ -37,7 +37,7 @@ class Transaction
     /**
      * Create a new transaction
      */
-    public static function create(int $userId, float $amount, string $description, ?string $category = null, string $type = 'expense'): bool
+    public static function create($userId, float $amount, string $description, ?string $category = null, string $type = 'expense'): bool
     {
         $sql = 'INSERT INTO transactions (user_id, amount, description, category, type, date) VALUES (?, ?, ?, ?, ?, datetime("now"))';
         $result = Database::execute($sql, [$userId, $amount, $description, $category, $type]);
@@ -47,7 +47,7 @@ class Transaction
     /**
      * Get current balance for a user
      */
-    public static function getCurrentBalance(int $userId): float
+    public static function getCurrentBalance($userId): float
     {
         // Get starting balance
         $startingBalance = self::getStartingBalance($userId);
@@ -68,7 +68,7 @@ class Transaction
     /**
      * Set starting balance for a user
      */
-    public static function setStartingBalance(int $userId, float $amount): bool
+    public static function setStartingBalance($userId, float $amount): bool
     {
         // Delete existing starting balance
         $sql = "DELETE FROM starting_balance WHERE user_id = ?";
@@ -83,7 +83,7 @@ class Transaction
     /**
      * Get starting balance for a user
      */
-    public static function getStartingBalance(int $userId): float
+    public static function getStartingBalance($userId): float
     {
         $sql = "SELECT amount FROM starting_balance WHERE user_id = ? ORDER BY created_at DESC LIMIT 1";
         $result = Database::query($sql, [$userId]);
@@ -93,7 +93,7 @@ class Transaction
     /**
      * Get all transactions with optional filtering
      */
-    public static function getAllWithFilter(int $userId, ?string $type = null): array
+    public static function getAllWithFilter($userId, ?string $type = null): array
     {
         $sql = "SELECT * FROM transactions WHERE user_id = ?";
         $params = [$userId];
