@@ -189,7 +189,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <label class="form-label">Transaction Date</label>
                                 <div class="form-control-plaintext">
                                     <i class="fas fa-calendar"></i> 
-                                    <?php echo date('F j, Y g:i A', strtotime($transaction['date'])); ?>
+                                    <?php echo date('F j, Y g:i A', strtotime($transaction['date'] ?? $transaction['created_at'])); ?>
                                 </div>
                                 <div class="form-text">
                                     Transaction date cannot be changed. To change the date, delete this transaction and create a new one.

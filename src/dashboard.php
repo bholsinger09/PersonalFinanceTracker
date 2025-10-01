@@ -327,7 +327,7 @@ if ($userId) {
                                     <tbody>
                                         <?php foreach ($transactions as $transaction): ?>
                                             <tr>
-                                                <td><?php echo date('M j, Y', strtotime($transaction['date'])); ?></td>
+                                                <td><?php echo date('M j, Y', strtotime($transaction['date'] ?? $transaction['created_at'])); ?></td>
                                                 <td><?php echo htmlspecialchars($transaction['description']); ?></td>
                                                 <td><?php echo htmlspecialchars($transaction['category'] ?? 'Uncategorized'); ?></td>
                                                 <td>
@@ -360,7 +360,7 @@ if ($userId) {
                                             <div class="d-flex justify-content-between align-items-start mb-2">
                                                 <div class="flex-grow-1">
                                                     <h6 class="mb-1"><?php echo htmlspecialchars($transaction['description']); ?></h6>
-                                                    <small class="text-muted"><?php echo date('M j, Y', strtotime($transaction['date'])); ?></small>
+                                                    <small class="text-muted"><?php echo date('M j, Y', strtotime($transaction['date'] ?? $transaction['created_at'])); ?></small>
                                                 </div>
                                                 <a href="/edit_transaction.php?id=<?php echo $transaction['id']; ?>" 
                                                    class="btn btn-sm btn-outline-primary" 

@@ -73,6 +73,55 @@ class Database
             // Fallback: Create tables directly if schema.sql doesn't exist
             self::createDefaultSchema();
         }
+        
+        // Run migrations to handle schema updates for existing databases
+        self::runMigrations();
+    }
+
+    /**
+     * Run database migrations to update existing schemas
+     */
+    private static function runMigrations(): void
+    {
+        try {
+            // Check if transactions table has date column
+            $result = self::$pdo->query("PRAGMA table_info(transactions)");
+            $columns = $result->fetchAll();
+            
+            $hasDateColumn = false;
+            $hasCategoryColumn = false;
+            
+            foreach ($columns as $column) {
+                if ($column['name'] === 'date') {
+                    $hasDateColumn = true;
+                }
+                if ($column['name'] === 'category') {
+                    $hasCategoryColumn = true;
+                }
+            }
+            
+            // Add date column if missing
+            if (!$hasDateColumn) {
+                self::$pdo->exec("ALTER TABLE transactions ADD COLUMN date DATETIME DEFAULT CURRENT_TIMESTAMP");
+                error_log("Database migration: Added date column to transactions table");
+            }
+            
+            // Add category column if missing
+            if (!$hasCategoryColumn) {
+                self::$pdo->exec("ALTER TABLE transactions ADD COLUMN category TEXT");
+                error_log("Database migration: Added category column to transactions table");
+            }
+            
+            // Update existing transactions that might not have date set
+            $updateCount = self::$pdo->exec("UPDATE transactions SET date = created_at WHERE date IS NULL");
+            if ($updateCount > 0) {
+                error_log("Database migration: Updated $updateCount transactions with date from created_at");
+            }
+            
+        } catch (PDOException $e) {
+            error_log("Database migration warning: " . $e->getMessage());
+            // Don't throw - migrations are best effort for existing databases
+        }
     }
 
     /**

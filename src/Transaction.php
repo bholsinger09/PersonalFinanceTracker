@@ -108,9 +108,39 @@ class Transaction
             $params[] = $category;
         }
         
-        $sql .= " ORDER BY date DESC";
+        // Check if date column exists, otherwise use created_at
+        if (self::hasDateColumn()) {
+            $sql .= " ORDER BY date DESC";
+        } else {
+            $sql .= " ORDER BY created_at DESC";
+        }
         
         return Database::query($sql, $params);
+    }
+
+    /**
+     * Check if the date column exists in the transactions table
+     */
+    private static function hasDateColumn(): bool
+    {
+        static $hasDate = null;
+        
+        if ($hasDate === null) {
+            try {
+                $result = Database::query("PRAGMA table_info(transactions)");
+                $hasDate = false;
+                foreach ($result as $column) {
+                    if ($column['name'] === 'date') {
+                        $hasDate = true;
+                        break;
+                    }
+                }
+            } catch (PDOException $e) {
+                $hasDate = false;
+            }
+        }
+        
+        return $hasDate;
     }
 
     /**
