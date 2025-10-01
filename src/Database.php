@@ -53,7 +53,13 @@ class Database
                 // Initialize database schema
                 self::initializeSchema();
             } catch (PDOException $e) {
-                throw new PDOException('Database connection failed: ' . $e->getMessage());
+                // If schema initialization fails, try to recover with basic setup
+                error_log("Schema initialization failed, attempting recovery: " . $e->getMessage());
+                try {
+                    self::initializeBasicSchema();
+                } catch (PDOException $recoveryError) {
+                    throw new PDOException('Database connection failed: ' . $e->getMessage());
+                }
             }
         }
 
@@ -65,51 +71,58 @@ class Database
      */
     private static function initializeSchema(): void
     {
-        // First run migrations on existing tables to ensure compatibility
-        self::runMigrations();
-        
-        // Then run schema.sql to create any missing tables and indexes
-        $schemaPath = __DIR__ . '/../database/schema.sql';
-        $safeSchemaPath = __DIR__ . '/../database/schema_safe.sql';
-        
-        // In production environments with existing databases, use safe schema
-        // In dev/test environments or new databases, use full schema
-        $useSchema = $schemaPath; // Default to full schema
-        
-        if (file_exists(self::$dbPath) && filesize(self::$dbPath) > 0) {
-            // Database exists and has content, check if it's missing columns
-            try {
-                $result = self::$pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='transactions'");
-                if ($result && $result->fetch()) {
-                    // Table exists, use safe schema to avoid conflicts
+        try {
+            // First run migrations on existing tables to ensure compatibility
+            self::runMigrations();
+            
+            // Then run schema.sql to create any missing tables and indexes
+            $schemaPath = __DIR__ . '/../database/schema.sql';
+            $safeSchemaPath = __DIR__ . '/../database/schema_safe.sql';
+            
+            // In production environments with existing databases, use safe schema
+            // In dev/test environments or new databases, use full schema
+            $useSchema = $schemaPath; // Default to full schema
+            
+            if (file_exists(self::$dbPath) && filesize(self::$dbPath) > 0) {
+                // Database exists and has content, check if it's missing columns
+                try {
+                    $result = self::$pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='transactions'");
+                    if ($result && $result->fetch()) {
+                        // Table exists, use safe schema to avoid conflicts
+                        if (file_exists($safeSchemaPath)) {
+                            $useSchema = $safeSchemaPath;
+                        }
+                    }
+                } catch (PDOException $e) {
+                    // If we can't check, use safe schema as fallback
                     if (file_exists($safeSchemaPath)) {
                         $useSchema = $safeSchemaPath;
                     }
                 }
-            } catch (PDOException $e) {
-                // If we can't check, use safe schema as fallback
-                if (file_exists($safeSchemaPath)) {
-                    $useSchema = $safeSchemaPath;
+            }
+            
+            if (file_exists($useSchema)) {
+                try {
+                    $schema = file_get_contents($useSchema);
+                    self::$pdo->exec($schema);
+                } catch (PDOException $e) {
+                    // If schema execution fails, try to run it piece by piece
+                    error_log("Schema execution failed, attempting individual statements: " . $e->getMessage());
+                    self::executeSchemaStatements($schema);
                 }
+            } else {
+                // Fallback: Create tables directly if schema.sql doesn't exist
+                self::createDefaultSchema();
             }
+            
+            // After migrations and schema, create indexes that depend on migrated columns
+            self::createPostMigrationIndexes();
+            
+        } catch (PDOException $e) {
+            // If everything fails, use basic recovery schema
+            error_log("Complete schema initialization failed, using basic recovery: " . $e->getMessage());
+            self::initializeBasicSchema();
         }
-        
-        if (file_exists($useSchema)) {
-            try {
-                $schema = file_get_contents($useSchema);
-                self::$pdo->exec($schema);
-            } catch (PDOException $e) {
-                // If schema execution fails, try to run it piece by piece
-                error_log("Schema execution failed, attempting individual statements: " . $e->getMessage());
-                self::executeSchemaStatements($schema);
-            }
-        } else {
-            // Fallback: Create tables directly if schema.sql doesn't exist
-            self::createDefaultSchema();
-        }
-        
-        // After migrations and schema, create indexes that depend on migrated columns
-        self::createPostMigrationIndexes();
     }
 
     /**
@@ -162,19 +175,81 @@ class Database
     }
 
     /**
+     * Initialize basic schema for recovery when main schema fails
+     */
+    private static function initializeBasicSchema(): void
+    {
+        // Create only essential tables without any indexes that might fail
+        $basicTables = [
+            "CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                google_id TEXT UNIQUE NOT NULL,
+                email TEXT UNIQUE NOT NULL,
+                name TEXT NOT NULL,
+                picture TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )",
+            "CREATE TABLE IF NOT EXISTS starting_balance (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                amount DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            )",
+            "CREATE TABLE IF NOT EXISTS transactions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                amount DECIMAL(10,2) NOT NULL,
+                description TEXT NOT NULL,
+                type TEXT NOT NULL DEFAULT 'expense' CHECK (type IN ('expense', 'deposit')),
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            )",
+            "CREATE TABLE IF NOT EXISTS categories (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                name TEXT NOT NULL,
+                color TEXT DEFAULT '#007bff',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id),
+                UNIQUE(user_id, name)
+            )"
+        ];
+        
+        foreach ($basicTables as $table) {
+            try {
+                self::$pdo->exec($table);
+            } catch (PDOException $e) {
+                error_log("Basic table creation failed: " . $e->getMessage());
+            }
+        }
+        
+        // Now run migrations to add missing columns
+        self::runMigrations();
+        
+        // Finally create indexes that are safe
+        self::createPostMigrationIndexes();
+    }
+
+    /**
      * Run database migrations to update existing schemas
      */
     private static function runMigrations(): void
     {
         try {
-            // First ensure the transactions table exists at all
-            $tableExists = false;
-            $tables = self::$pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='transactions'");
-            if ($tables && $tables->fetch()) {
-                $tableExists = true;
+            // First check if we can even query the database
+            $tables = self::$pdo->query("SELECT name FROM sqlite_master WHERE type='table'")->fetchAll();
+            
+            // Check if transactions table exists
+            $transactionsExists = false;
+            foreach ($tables as $table) {
+                if ($table['name'] === 'transactions') {
+                    $transactionsExists = true;
+                    break;
+                }
             }
             
-            if (!$tableExists) {
+            if (!$transactionsExists) {
                 // Table doesn't exist yet, skip migrations (schema will create it)
                 return;
             }
