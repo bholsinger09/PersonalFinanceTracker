@@ -39,8 +39,15 @@ class Transaction
      */
     public static function create($userId, float $amount, string $description, ?string $category = null, string $type = 'expense'): bool
     {
-        $sql = 'INSERT INTO transactions (user_id, amount, description, category, type, date) VALUES (?, ?, ?, ?, ?, datetime("now"))';
-        $result = Database::execute($sql, [$userId, $amount, $description, $category, $type]);
+        // Check if type column exists
+        if (self::hasTypeColumn()) {
+            $sql = 'INSERT INTO transactions (user_id, amount, description, category, type, date) VALUES (?, ?, ?, ?, ?, datetime("now"))';
+            $result = Database::execute($sql, [$userId, $amount, $description, $category, $type]);
+        } else {
+            // Fallback for tables without type column
+            $sql = 'INSERT INTO transactions (user_id, amount, description, category, date) VALUES (?, ?, ?, ?, datetime("now"))';
+            $result = Database::execute($sql, [$userId, $amount, $description, $category]);
+        }
         return $result > 0;
     }
 
@@ -53,12 +60,22 @@ class Transaction
         $startingBalance = self::getStartingBalance($userId);
         
         // Calculate balance from transactions
-        $sql = "
-            SELECT 
-                SUM(CASE WHEN type = 'deposit' THEN amount ELSE -amount END) as balance_change
-            FROM transactions 
-            WHERE user_id = ?
-        ";
+        if (self::hasTypeColumn()) {
+            $sql = "
+                SELECT 
+                    SUM(CASE WHEN type = 'deposit' THEN amount ELSE -amount END) as balance_change
+                FROM transactions 
+                WHERE user_id = ?
+            ";
+        } else {
+            // Fallback: assume all transactions are expenses if no type column
+            $sql = "
+                SELECT 
+                    SUM(-amount) as balance_change
+                FROM transactions 
+                WHERE user_id = ?
+            ";
+        }
         $result = Database::query($sql, [$userId]);
         $transactionBalance = $result[0]['balance_change'] ?? 0.0;
         
@@ -98,7 +115,7 @@ class Transaction
         $sql = "SELECT * FROM transactions WHERE user_id = ?";
         $params = [$userId];
         
-        if ($type && in_array($type, ['expense', 'deposit'])) {
+        if ($type && in_array($type, ['expense', 'deposit']) && self::hasTypeColumn()) {
             $sql .= " AND type = ?";
             $params[] = $type;
         }
@@ -144,6 +161,31 @@ class Transaction
     }
 
     /**
+     * Check if the type column exists in the transactions table
+     */
+    private static function hasTypeColumn(): bool
+    {
+        static $hasType = null;
+        
+        if ($hasType === null) {
+            try {
+                $result = Database::query("PRAGMA table_info(transactions)");
+                $hasType = false;
+                foreach ($result as $column) {
+                    if ($column['name'] === 'type') {
+                        $hasType = true;
+                        break;
+                    }
+                }
+            } catch (PDOException $e) {
+                $hasType = false;
+            }
+        }
+        
+        return $hasType;
+    }
+
+    /**
      * Find transaction by ID
      */
     public static function find(int $id): ?self
@@ -180,8 +222,13 @@ class Transaction
      */
     public function update(float $amount, string $description, ?string $category = null, string $type = 'expense'): bool
     {
-        $sql = 'UPDATE transactions SET amount = ?, description = ?, category = ?, type = ? WHERE id = ?';
-        $affected = Database::execute($sql, [$amount, $description, $category, $type, $this->id]);
+        if (self::hasTypeColumn()) {
+            $sql = 'UPDATE transactions SET amount = ?, description = ?, category = ?, type = ? WHERE id = ?';
+            $affected = Database::execute($sql, [$amount, $description, $category, $type, $this->id]);
+        } else {
+            $sql = 'UPDATE transactions SET amount = ?, description = ?, category = ? WHERE id = ?';
+            $affected = Database::execute($sql, [$amount, $description, $category, $this->id]);
+        }
 
         if ($affected > 0) {
             $this->amount = $amount;
@@ -271,8 +318,13 @@ class Transaction
      */
     public static function updateById(int $id, $userId, float $amount, string $description, ?string $category = null, string $type = 'expense'): bool
     {
-        $sql = "UPDATE transactions SET amount = ?, description = ?, category = ?, type = ? WHERE id = ? AND user_id = ?";
-        return Database::execute($sql, [$amount, $description, $category, $type, $id, $userId]) > 0;
+        if (self::hasTypeColumn()) {
+            $sql = "UPDATE transactions SET amount = ?, description = ?, category = ?, type = ? WHERE id = ? AND user_id = ?";
+            return Database::execute($sql, [$amount, $description, $category, $type, $id, $userId]) > 0;
+        } else {
+            $sql = "UPDATE transactions SET amount = ?, description = ?, category = ? WHERE id = ? AND user_id = ?";
+            return Database::execute($sql, [$amount, $description, $category, $id, $userId]) > 0;
+        }
     }
 
     /**

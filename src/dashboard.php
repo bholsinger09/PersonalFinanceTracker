@@ -331,12 +331,12 @@ if ($userId) {
                                                 <td><?php echo htmlspecialchars($transaction['description']); ?></td>
                                                 <td><?php echo htmlspecialchars($transaction['category'] ?? 'Uncategorized'); ?></td>
                                                 <td>
-                                                    <span class="badge bg-<?php echo $transaction['type'] === 'expense' ? 'danger' : 'success'; ?>">
-                                                        <?php echo ucfirst($transaction['type']); ?>
+                                                    <span class="badge bg-<?php echo ($transaction['type'] ?? 'expense') === 'expense' ? 'danger' : 'success'; ?>">
+                                                        <?php echo ucfirst($transaction['type'] ?? 'expense'); ?>
                                                     </span>
                                                 </td>
-                                                <td class="text-<?php echo $transaction['type'] === 'expense' ? 'danger' : 'success'; ?>">
-                                                    <?php echo $transaction['type'] === 'expense' ? '-' : '+'; ?>
+                                                <td class="text-<?php echo ($transaction['type'] ?? 'expense') === 'expense' ? 'danger' : 'success'; ?>">
+                                                    <?php echo ($transaction['type'] ?? 'expense') === 'expense' ? '-' : '+'; ?>
                                                     $<?php echo number_format($transaction['amount'], 2); ?>
                                                 </td>
                                                 <td>
@@ -370,13 +370,13 @@ if ($userId) {
                                             </div>
                                             <div class="d-flex justify-content-between align-items-center">
                                                 <div>
-                                                    <span class="badge bg-<?php echo $transaction['type'] === 'expense' ? 'danger' : 'success'; ?> me-2">
-                                                        <?php echo ucfirst($transaction['type']); ?>
+                                                    <span class="badge bg-<?php echo ($transaction['type'] ?? 'expense') === 'expense' ? 'danger' : 'success'; ?> me-2">
+                                                        <?php echo ucfirst($transaction['type'] ?? 'expense'); ?>
                                                     </span>
                                                     <small class="text-muted"><?php echo htmlspecialchars($transaction['category'] ?? 'Uncategorized'); ?></small>
                                                 </div>
-                                                <strong class="text-<?php echo $transaction['type'] === 'expense' ? 'danger' : 'success'; ?>">
-                                                    <?php echo $transaction['type'] === 'expense' ? '-' : '+'; ?>
+                                                <strong class="text-<?php echo ($transaction['type'] ?? 'expense') === 'expense' ? 'danger' : 'success'; ?>">
+                                                    <?php echo ($transaction['type'] ?? 'expense') === 'expense' ? '-' : '+'; ?>
                                                     $<?php echo number_format($transaction['amount'], 2); ?>
                                                 </strong>
                                             </div>

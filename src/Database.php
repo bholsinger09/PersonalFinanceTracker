@@ -260,6 +260,7 @@ class Database
             
             $hasDateColumn = false;
             $hasCategoryColumn = false;
+            $hasTypeColumn = false;
             
             foreach ($columns as $column) {
                 if ($column['name'] === 'date') {
@@ -268,6 +269,15 @@ class Database
                 if ($column['name'] === 'category') {
                     $hasCategoryColumn = true;
                 }
+                if ($column['name'] === 'type') {
+                    $hasTypeColumn = true;
+                }
+            }
+            
+            // Add type column if missing
+            if (!$hasTypeColumn) {
+                self::$pdo->exec("ALTER TABLE transactions ADD COLUMN type TEXT NOT NULL DEFAULT 'expense'");
+                error_log("Database migration: Added type column to transactions table");
             }
             
             // Add date column if missing
