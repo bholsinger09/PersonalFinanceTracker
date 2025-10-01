@@ -68,21 +68,80 @@ try {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Mobile optimizations for reports */
+        @media (max-width: 768px) {
+            .container { padding: 0 1rem; }
+            .mt-5 { margin-top: 2rem !important; }
+            
+            /* Header adjustments */
+            .mobile-header { text-align: center; margin-bottom: 1rem; }
+            .mobile-header h1 { font-size: 1.5rem; margin-bottom: 0.5rem; }
+            
+            /* Period selector responsive */
+            .period-selector .row > div { margin-bottom: 1rem; }
+            .period-selector .btn { width: 100%; }
+            
+            /* Summary cards stack */
+            .summary-card { margin-bottom: 1rem; }
+            .summary-card .card-body { padding: 1rem; }
+            .summary-card h4 { font-size: 1.25rem; }
+            
+            /* Chart containers mobile */
+            .chart-container { 
+                position: relative; 
+                height: 300px !important; 
+                margin-bottom: 2rem;
+            }
+            
+            /* Stats grid responsive */
+            .stats-grid .col-md-3 { margin-bottom: 1rem; }
+            
+            /* Hide excessive details on small screens */
+            .hide-mobile { display: none !important; }
+            
+            /* Button groups stack */
+            .btn-group-mobile .btn { 
+                width: 100%; 
+                margin-bottom: 0.5rem; 
+            }
+        }
+        
+        /* Chart responsive behavior */
+        .chart-container {
+            position: relative;
+            height: 400px;
+        }
+        
+        @media (max-width: 576px) {
+            .chart-container { height: 250px !important; }
+        }
+    </style>
 </head>
 <body>
     <div class="container mt-5">
         <!-- Header -->
         <div class="row">
-            <div class="col-md-8">
+            <div class="col-md-8 mobile-header">
                 <h1><i class="fas fa-chart-bar"></i> Financial Reports</h1>
             </div>
-            <div class="col-md-4 text-end">
-                <a href="/index.php" class="btn btn-outline-primary">
-                    <i class="fas fa-arrow-left"></i> Back to Dashboard
-                </a>
-                <a href="/logout.php" class="btn btn-outline-danger">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                </a>
+            <div class="col-md-4 text-md-end text-center">
+                <div class="btn-group-mobile d-md-none">
+                    <a href="/index.php" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left"></i> Back to Dashboard
+                    </a>
+                    <a href="/logout.php" class="btn btn-outline-danger">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </div>
+                <div class="d-none d-md-block">
+                    <a href="/index.php" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left"></i> Back to Dashboard
+                    </a>
+                    <a href="/logout.php" class="btn btn-outline-danger">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </div>
             </div>
         </div>
 
@@ -94,10 +153,10 @@ try {
         <div class="row mt-4">
             <div class="col-md-12">
                 <div class="card">
-                    <div class="card-body">
+                    <div class="card-body period-selector">
                         <h5 class="card-title">Select Period</h5>
                         <form method="GET" class="row g-3">
-                            <div class="col-md-4">
+                            <div class="col-md-4 col-12">
                                 <label for="year" class="form-label">Year</label>
                                 <select name="year" id="year" class="form-select">
                                     <?php for ($y = date('Y'); $y >= date('Y') - 5; $y--): ?>
@@ -107,7 +166,7 @@ try {
                                     <?php endfor; ?>
                                 </select>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-4 col-12">
                                 <label for="month" class="form-label">Month</label>
                                 <select name="month" id="month" class="form-select">
                                     <?php for ($m = 1; $m <= 12; $m++): ?>
@@ -118,9 +177,9 @@ try {
                                     <?php endfor; ?>
                                 </select>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-4 col-12">
                                 <label class="form-label">&nbsp;</label>
-                                <button type="submit" class="btn btn-primary d-block">
+                                <button type="submit" class="btn btn-primary d-block w-100">
                                     <i class="fas fa-search"></i> Update Report
                                 </button>
                             </div>

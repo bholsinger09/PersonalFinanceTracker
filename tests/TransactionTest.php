@@ -226,4 +226,80 @@ class TransactionTest extends TestCase
         $this->assertEquals('User 1 expense', $transactions1[0]['description']);
         $this->assertEquals('User 2 expense', $transactions2[0]['description']);
     }
+
+    public function testUpdateTransaction(): void
+    {
+        // Create a transaction
+        Transaction::create($this->testUserId, 100.00, 'Original Description', 'Food', 'expense');
+        
+        $transactions = Transaction::getAllWithFilter($this->testUserId);
+        $this->assertCount(1, $transactions);
+        
+        $transactionId = $transactions[0]['id'];
+        
+        // Update the transaction
+        $result = Transaction::updateById($transactionId, $this->testUserId, 150.00, 'Updated Description', 'Transportation', 'expense');
+        $this->assertTrue($result);
+        
+        // Verify the update
+        $updatedTransaction = Transaction::getByIdAndUserId($transactionId, $this->testUserId);
+        $this->assertNotNull($updatedTransaction);
+        $this->assertEquals(150.00, $updatedTransaction['amount']);
+        $this->assertEquals('Updated Description', $updatedTransaction['description']);
+        $this->assertEquals('Transportation', $updatedTransaction['category']);
+        $this->assertEquals('expense', $updatedTransaction['type']);
+    }
+
+    public function testDeleteTransaction(): void
+    {
+        // Create a transaction
+        Transaction::create($this->testUserId, 100.00, 'To be deleted', 'Food', 'expense');
+        
+        $transactions = Transaction::getAllWithFilter($this->testUserId);
+        $this->assertCount(1, $transactions);
+        
+        $transactionId = $transactions[0]['id'];
+        
+        // Delete the transaction
+        $result = Transaction::deleteById($transactionId, $this->testUserId);
+        $this->assertTrue($result);
+        
+        // Verify deletion
+        $deletedTransaction = Transaction::getByIdAndUserId($transactionId, $this->testUserId);
+        $this->assertNull($deletedTransaction);
+        
+        // Verify transaction list is empty
+        $transactions = Transaction::getAllWithFilter($this->testUserId);
+        $this->assertCount(0, $transactions);
+    }
+
+    public function testTransactionEditingSecurity(): void
+    {
+        // Create another test user
+        $user2Id = 3;
+        $sql = "INSERT OR REPLACE INTO users (id, google_id, email, name) VALUES (?, ?, ?, ?)";
+        Database::execute($sql, [$user2Id, 'test789', 'user3@example.com', 'Test User 3']);
+
+        // Create a transaction for user 1
+        Transaction::create($this->testUserId, 100.00, 'User 1 transaction', 'Food', 'expense');
+        $user1Transactions = Transaction::getAllWithFilter($this->testUserId);
+        $transactionId = $user1Transactions[0]['id'];
+        
+        // User 2 should not be able to view user 1's transaction
+        $this->assertNull(Transaction::getByIdAndUserId($transactionId, $user2Id));
+        
+        // User 2 should not be able to update user 1's transaction
+        $result = Transaction::updateById($transactionId, $user2Id, 200.00, 'Hacked transaction', 'Evil', 'expense');
+        $this->assertFalse($result);
+        
+        // User 2 should not be able to delete user 1's transaction
+        $result = Transaction::deleteById($transactionId, $user2Id);
+        $this->assertFalse($result);
+        
+        // Verify original transaction is unchanged
+        $originalTransaction = Transaction::getByIdAndUserId($transactionId, $this->testUserId);
+        $this->assertNotNull($originalTransaction);
+        $this->assertEquals('User 1 transaction', $originalTransaction['description']);
+        $this->assertEquals(100.00, $originalTransaction['amount']);
+    }
 }

@@ -148,10 +148,10 @@ class Transaction
     /**
      * Update transaction
      */
-    public function update(float $amount, string $description): bool
+    public function update(float $amount, string $description, ?string $category = null, string $type = 'expense'): bool
     {
-        $sql = 'UPDATE transactions SET amount = ?, description = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?';
-        $affected = Database::execute($sql, [$amount, $description, $this->id]);
+        $sql = 'UPDATE transactions SET amount = ?, description = ?, category = ?, type = ? WHERE id = ?';
+        $affected = Database::execute($sql, [$amount, $description, $category, $type, $this->id]);
 
         if ($affected > 0) {
             $this->amount = $amount;
@@ -234,5 +234,33 @@ class Transaction
     public function getFormattedCreatedAt(): string
     {
         return $this->createdAt->format('M j, Y g:i A');
+    }
+
+    /**
+     * Static method to update a transaction by ID and user ID
+     */
+    public static function updateById(int $id, $userId, float $amount, string $description, ?string $category = null, string $type = 'expense'): bool
+    {
+        $sql = "UPDATE transactions SET amount = ?, description = ?, category = ?, type = ? WHERE id = ? AND user_id = ?";
+        return Database::execute($sql, [$amount, $description, $category, $type, $id, $userId]) > 0;
+    }
+
+    /**
+     * Static method to delete a transaction by ID and user ID
+     */
+    public static function deleteById(int $id, $userId): bool
+    {
+        $sql = "DELETE FROM transactions WHERE id = ? AND user_id = ?";
+        return Database::execute($sql, [$id, $userId]) > 0;
+    }
+
+    /**
+     * Get a transaction by ID and user ID (for security)
+     */
+    public static function getByIdAndUserId(int $id, $userId): ?array
+    {
+        $sql = "SELECT * FROM transactions WHERE id = ? AND user_id = ?";
+        $result = Database::query($sql, [$id, $userId]);
+        return $result[0] ?? null;
     }
 }
