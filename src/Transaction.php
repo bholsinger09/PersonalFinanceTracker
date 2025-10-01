@@ -37,15 +37,75 @@ class Transaction
     /**
      * Create a new transaction
      */
-    public static function create(string $userId, float $amount, string $description): self
+    public static function create(int $userId, float $amount, string $description, ?string $category = null, string $type = 'expense'): bool
     {
-        $sql = 'INSERT INTO transactions (user_id, amount, description) VALUES (?, ?, ?)';
-        Database::execute($sql, [$userId, $amount, $description]);
+        $sql = 'INSERT INTO transactions (user_id, amount, description, category, type, date) VALUES (?, ?, ?, ?, ?, datetime("now"))';
+        $result = Database::execute($sql, [$userId, $amount, $description, $category, $type]);
+        return $result > 0;
+    }
 
-        $id = (int) Database::lastInsertId();
-        $now = new DateTime();
+    /**
+     * Get current balance for a user
+     */
+    public static function getCurrentBalance(int $userId): float
+    {
+        // Get starting balance
+        $startingBalance = self::getStartingBalance($userId);
+        
+        // Calculate balance from transactions
+        $sql = "
+            SELECT 
+                SUM(CASE WHEN type = 'deposit' THEN amount ELSE -amount END) as balance_change
+            FROM transactions 
+            WHERE user_id = ?
+        ";
+        $result = Database::query($sql, [$userId]);
+        $transactionBalance = $result[0]['balance_change'] ?? 0.0;
+        
+        return $startingBalance + $transactionBalance;
+    }
 
-        return new self($id, $userId, $amount, $description, $now, $now);
+    /**
+     * Set starting balance for a user
+     */
+    public static function setStartingBalance(int $userId, float $amount): bool
+    {
+        // Delete existing starting balance
+        $sql = "DELETE FROM starting_balance WHERE user_id = ?";
+        Database::execute($sql, [$userId]);
+        
+        // Insert new starting balance
+        $sql = "INSERT INTO starting_balance (user_id, amount) VALUES (?, ?)";
+        $result = Database::execute($sql, [$userId, $amount]);
+        return $result > 0;
+    }
+
+    /**
+     * Get starting balance for a user
+     */
+    public static function getStartingBalance(int $userId): float
+    {
+        $sql = "SELECT amount FROM starting_balance WHERE user_id = ? ORDER BY created_at DESC LIMIT 1";
+        $result = Database::query($sql, [$userId]);
+        return $result[0]['amount'] ?? 0.0;
+    }
+
+    /**
+     * Get all transactions with optional filtering
+     */
+    public static function getAllWithFilter(int $userId, ?string $type = null): array
+    {
+        $sql = "SELECT * FROM transactions WHERE user_id = ?";
+        $params = [$userId];
+        
+        if ($type && in_array($type, ['expense', 'deposit'])) {
+            $sql .= " AND type = ?";
+            $params[] = $type;
+        }
+        
+        $sql .= " ORDER BY date DESC";
+        
+        return Database::query($sql, $params);
     }
 
     /**
