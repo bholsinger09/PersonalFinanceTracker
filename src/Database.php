@@ -65,17 +65,100 @@ class Database
      */
     private static function initializeSchema(): void
     {
+        // First run migrations on existing tables to ensure compatibility
+        self::runMigrations();
+        
+        // Then run schema.sql to create any missing tables and indexes
         $schemaPath = __DIR__ . '/../database/schema.sql';
-        if (file_exists($schemaPath)) {
-            $schema = file_get_contents($schemaPath);
-            self::$pdo->exec($schema);
+        $safeSchemaPath = __DIR__ . '/../database/schema_safe.sql';
+        
+        // In production environments with existing databases, use safe schema
+        // In dev/test environments or new databases, use full schema
+        $useSchema = $schemaPath; // Default to full schema
+        
+        if (file_exists(self::$dbPath) && filesize(self::$dbPath) > 0) {
+            // Database exists and has content, check if it's missing columns
+            try {
+                $result = self::$pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='transactions'");
+                if ($result && $result->fetch()) {
+                    // Table exists, use safe schema to avoid conflicts
+                    if (file_exists($safeSchemaPath)) {
+                        $useSchema = $safeSchemaPath;
+                    }
+                }
+            } catch (PDOException $e) {
+                // If we can't check, use safe schema as fallback
+                if (file_exists($safeSchemaPath)) {
+                    $useSchema = $safeSchemaPath;
+                }
+            }
+        }
+        
+        if (file_exists($useSchema)) {
+            try {
+                $schema = file_get_contents($useSchema);
+                self::$pdo->exec($schema);
+            } catch (PDOException $e) {
+                // If schema execution fails, try to run it piece by piece
+                error_log("Schema execution failed, attempting individual statements: " . $e->getMessage());
+                self::executeSchemaStatements($schema);
+            }
         } else {
             // Fallback: Create tables directly if schema.sql doesn't exist
             self::createDefaultSchema();
         }
         
-        // Run migrations to handle schema updates for existing databases
-        self::runMigrations();
+        // After migrations and schema, create indexes that depend on migrated columns
+        self::createPostMigrationIndexes();
+    }
+
+    /**
+     * Execute schema statements individually to handle errors gracefully
+     */
+    private static function executeSchemaStatements(string $schema): void
+    {
+        // Split into individual statements
+        $statements = array_filter(array_map('trim', explode(';', $schema)));
+        
+        foreach ($statements as $statement) {
+            if (empty($statement) || strpos($statement, '--') === 0) {
+                continue; // Skip empty lines and comments
+            }
+            
+            try {
+                self::$pdo->exec($statement . ';');
+            } catch (PDOException $e) {
+                // Log the error but continue with other statements
+                error_log("Schema statement failed (continuing): " . $e->getMessage() . " - Statement: " . substr($statement, 0, 100));
+            }
+        }
+    }
+
+    /**
+     * Create indexes that depend on columns added by migrations
+     */
+    private static function createPostMigrationIndexes(): void
+    {
+        try {
+            // Create date index if date column exists
+            $result = self::$pdo->query("PRAGMA table_info(transactions)");
+            $columns = $result->fetchAll();
+            
+            $hasDateColumn = false;
+            foreach ($columns as $column) {
+                if ($column['name'] === 'date') {
+                    $hasDateColumn = true;
+                    break;
+                }
+            }
+            
+            if ($hasDateColumn) {
+                self::$pdo->exec("CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date)");
+            }
+            
+        } catch (PDOException $e) {
+            error_log("Post-migration index creation warning: " . $e->getMessage());
+        }
     }
 
     /**
@@ -84,6 +167,18 @@ class Database
     private static function runMigrations(): void
     {
         try {
+            // First ensure the transactions table exists at all
+            $tableExists = false;
+            $tables = self::$pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='transactions'");
+            if ($tables && $tables->fetch()) {
+                $tableExists = true;
+            }
+            
+            if (!$tableExists) {
+                // Table doesn't exist yet, skip migrations (schema will create it)
+                return;
+            }
+            
             // Check if transactions table has date column
             $result = self::$pdo->query("PRAGMA table_info(transactions)");
             $columns = $result->fetchAll();
