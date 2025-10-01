@@ -41,16 +41,16 @@ RUN chown -R www-data:www-data /var/www/html && \
 # Configure Apache document root to public directory
 RUN sed -i 's|DocumentRoot /var/www/html|DocumentRoot /var/www/html/public|' /etc/apache2/sites-available/000-default.conf && \
     echo '<Directory /var/www/html/public>\n\
-        AllowOverride All\n\
-        Require all granted\n\
+    AllowOverride All\n\
+    Require all granted\n\
     </Directory>' >> /etc/apache2/sites-available/000-default.conf
 
 # Create startup script to configure Apache port dynamically
 RUN echo '#!/bin/bash\n\
-PORT=${PORT:-80}\n\
-echo "Listen $PORT" > /etc/apache2/ports.conf\n\
-sed -i "s/:80/:$PORT/g" /etc/apache2/sites-available/000-default.conf\n\
-apache2-foreground' > /usr/local/bin/start-apache.sh && \
+    PORT=${PORT:-80}\n\
+    echo "Listen $PORT" > /etc/apache2/ports.conf\n\
+    sed -i "s/:80/:$PORT/g" /etc/apache2/sites-available/000-default.conf\n\
+    apache2-foreground' > /usr/local/bin/start-apache.sh && \
     chmod +x /usr/local/bin/start-apache.sh
 
 # Expose port (Render will set PORT env var)
