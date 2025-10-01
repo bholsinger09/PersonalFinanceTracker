@@ -147,6 +147,35 @@ class TransactionTest extends TestCase
         $this->assertCount(3, $allTransactions);
     }
 
+    public function testFilterTransactionsByCategory(): void
+    {
+        // Create transactions with different categories
+        Transaction::create($this->testUserId, 100.00, 'Groceries', 'Food', 'expense');
+        Transaction::create($this->testUserId, 200.00, 'Monthly Salary', 'Salary', 'deposit');
+        Transaction::create($this->testUserId, 50.00, 'Gas Station', 'Transportation', 'expense');
+        Transaction::create($this->testUserId, 30.00, 'Lunch', 'Food', 'expense');
+        
+        // Test filter by Food category
+        $foodTransactions = Transaction::getAllWithFilter($this->testUserId, null, 'Food');
+        $this->assertCount(2, $foodTransactions);
+        
+        // Test filter by Salary category
+        $salaryTransactions = Transaction::getAllWithFilter($this->testUserId, null, 'Salary');
+        $this->assertCount(1, $salaryTransactions);
+        
+        // Test filter by Transportation category
+        $transportTransactions = Transaction::getAllWithFilter($this->testUserId, null, 'Transportation');
+        $this->assertCount(1, $transportTransactions);
+        
+        // Test combined filtering - expenses in Food category
+        $foodExpenses = Transaction::getAllWithFilter($this->testUserId, 'expense', 'Food');
+        $this->assertCount(2, $foodExpenses);
+        
+        // Test combined filtering - deposits in Salary category
+        $salaryDeposits = Transaction::getAllWithFilter($this->testUserId, 'deposit', 'Salary');
+        $this->assertCount(1, $salaryDeposits);
+    }
+
     public function testTransactionDataIntegrity(): void
     {
         $amount = 125.75;

@@ -4,6 +4,7 @@ require_once '../vendor/autoload.php';
 
 use FinanceTracker\Transaction;
 use FinanceTracker\User;
+use FinanceTracker\Category;
 
 $user = $_SESSION['user'] ?? null;
 
@@ -63,7 +64,11 @@ if ($userId) {
 
         // Handle filter
         $filter = $_GET['filter'] ?? null;
-        $transactions = Transaction::getAllWithFilter($userId, $filter);
+        $categoryFilter = $_GET['category'] ?? null;
+        $transactions = Transaction::getAllWithFilter($userId, $filter, $categoryFilter);
+        
+        // Load categories for the user
+        $categories = Category::getByUserId($userId);
 
     } catch (Exception $e) {
         $error = 'Failed to load dashboard data: ' . $e->getMessage();
@@ -148,6 +153,9 @@ if ($userId) {
                             <a href="/add_transaction.php?type=deposit" class="btn btn-success">
                                 <i class="fas fa-plus-circle"></i> Add Deposit
                             </a>
+                            <a href="/reports.php" class="btn btn-info">
+                                <i class="fas fa-chart-bar"></i> View Reports
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -160,16 +168,33 @@ if ($userId) {
                 <div class="card">
                     <div class="card-body">
                         <h5 class="card-title">Filter Transactions</h5>
-                        <div class="btn-group" role="group">
-                            <a href="?" class="btn btn-outline-primary <?php echo !$filter ? 'active' : ''; ?>">
-                                <i class="fas fa-list"></i> All
-                            </a>
-                            <a href="?filter=expense" class="btn btn-outline-danger <?php echo $filter === 'expense' ? 'active' : ''; ?>">
-                                <i class="fas fa-minus-circle"></i> Expenses
-                            </a>
-                            <a href="?filter=deposit" class="btn btn-outline-success <?php echo $filter === 'deposit' ? 'active' : ''; ?>">
-                                <i class="fas fa-plus-circle"></i> Deposits
-                            </a>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label">By Type:</label>
+                                <div class="btn-group d-block" role="group">
+                                    <a href="?" class="btn btn-outline-primary <?php echo !$filter ? 'active' : ''; ?>">
+                                        <i class="fas fa-list"></i> All
+                                    </a>
+                                    <a href="?filter=expense" class="btn btn-outline-danger <?php echo $filter === 'expense' ? 'active' : ''; ?>">
+                                        <i class="fas fa-minus-circle"></i> Expenses
+                                    </a>
+                                    <a href="?filter=deposit" class="btn btn-outline-success <?php echo $filter === 'deposit' ? 'active' : ''; ?>">
+                                        <i class="fas fa-plus-circle"></i> Deposits
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="categoryFilter" class="form-label">By Category:</label>
+                                <select id="categoryFilter" class="form-select" onchange="filterByCategory(this.value)">
+                                    <option value="">All Categories</option>
+                                    <?php foreach ($categories as $category): ?>
+                                        <option value="<?php echo htmlspecialchars($category['name']); ?>"
+                                                <?php echo (isset($_GET['category']) && $_GET['category'] === $category['name']) ? 'selected' : ''; ?>>
+                                            <?php echo htmlspecialchars($category['name']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -231,5 +256,16 @@ if ($userId) {
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function filterByCategory(category) {
+            const currentUrl = new URL(window.location);
+            if (category) {
+                currentUrl.searchParams.set('category', category);
+            } else {
+                currentUrl.searchParams.delete('category');
+            }
+            window.location = currentUrl.toString();
+        }
+    </script>
 </body>
 </html>

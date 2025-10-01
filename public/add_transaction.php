@@ -11,6 +11,7 @@ require_once '../vendor/autoload.php';
 
 use FinanceTracker\Transaction;
 use FinanceTracker\Database;
+use FinanceTracker\Category;
 
 $message = '';
 $error = '';
@@ -45,6 +46,9 @@ if (!$userId || !is_numeric($userId)) {
 
 // Get transaction type from URL parameter
 $type = $_GET['type'] ?? 'expense'; // Default to expense
+
+// Load categories for the user
+$categories = Category::getGroupedByType((int)$userId);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $amount = trim($_POST['amount'] ?? '');
@@ -135,9 +139,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                             <div class="mb-3">
                                 <label for="category" class="form-label">Category (Optional)</label>
-                                <input type="text" name="category" id="category" class="form-control" 
-                                       value="<?php echo htmlspecialchars($category ?? ''); ?>"
-                                       placeholder="e.g., Food, Transportation, Entertainment, Salary">
+                                <select name="category" id="category" class="form-select">
+                                    <option value="">Select a category...</option>
+                                    <?php 
+                                    $relevantCategories = $type === 'expense' ? $categories['expense'] : $categories['income'];
+                                    foreach ($relevantCategories as $cat): 
+                                    ?>
+                                        <option value="<?php echo htmlspecialchars($cat['name']); ?>" 
+                                                <?php echo (isset($category) && $category === $cat['name']) ? 'selected' : ''; ?>>
+                                            <?php echo htmlspecialchars($cat['name']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                    
+                                    <!-- Add option for other categories -->
+                                    <optgroup label="Other Categories">
+                                        <?php 
+                                        $otherCategories = $type === 'expense' ? $categories['income'] : $categories['expense'];
+                                        foreach ($otherCategories as $cat): 
+                                        ?>
+                                            <option value="<?php echo htmlspecialchars($cat['name']); ?>" 
+                                                    <?php echo (isset($category) && $category === $cat['name']) ? 'selected' : ''; ?>>
+                                                <?php echo htmlspecialchars($cat['name']); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </optgroup>
+                                </select>
+                                <div class="form-text">
+                                    Choose a category to better organize your transactions.
+                                </div>
                             </div>
 
                             <div class="d-grid gap-2">

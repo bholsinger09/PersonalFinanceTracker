@@ -69,6 +69,10 @@ class User
         Database::execute($sql, [$googleId, $email, $name, $picture]);
 
         $id = (int) Database::lastInsertId();
+        
+        // Create default categories for the new user
+        Category::createDefaultCategories($id);
+        
         return new self($id, $googleId, $email, $name, $picture);
     }
 

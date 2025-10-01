@@ -93,7 +93,7 @@ class Transaction
     /**
      * Get all transactions with optional filtering
      */
-    public static function getAllWithFilter($userId, ?string $type = null): array
+    public static function getAllWithFilter($userId, ?string $type = null, ?string $category = null): array
     {
         $sql = "SELECT * FROM transactions WHERE user_id = ?";
         $params = [$userId];
@@ -101,6 +101,11 @@ class Transaction
         if ($type && in_array($type, ['expense', 'deposit'])) {
             $sql .= " AND type = ?";
             $params[] = $type;
+        }
+        
+        if ($category) {
+            $sql .= " AND category = ?";
+            $params[] = $category;
         }
         
         $sql .= " ORDER BY date DESC";
