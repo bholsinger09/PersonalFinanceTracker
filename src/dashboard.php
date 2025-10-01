@@ -3,6 +3,7 @@
 require_once '../vendor/autoload.php';
 
 use FinanceTracker\Transaction;
+use FinanceTracker\User;
 
 $user = $_SESSION['user'] ?? null;
 
@@ -11,13 +12,15 @@ if (!$user) {
     exit();
 }
 
+// Get the database user ID - this should now be reliable from the session
 $userId = $user['id'] ?? null;
 
-// If we don't have a database user ID, try to get it from the database
+// Fallback: If somehow we don't have a numeric ID, try to look it up
 if (!$userId || !is_numeric($userId)) {
-    // Try to find user ID from database using email or google_id
+    error_log("Dashboard: No valid user ID in session, attempting lookup for: " . json_encode($user));
+    
     $email = $user['email'] ?? null;
-    $googleId = $user['google_id'] ?? $user['id'] ?? null;
+    $googleId = $user['google_id'] ?? null;
     
     if ($email) {
         $sql = "SELECT id FROM users WHERE email = ?";
@@ -27,6 +30,12 @@ if (!$userId || !is_numeric($userId)) {
         $sql = "SELECT id FROM users WHERE google_id = ?";
         $result = \FinanceTracker\Database::query($sql, [$googleId]);
         $userId = $result[0]['id'] ?? null;
+    }
+    
+    if (!$userId) {
+        error_log("Dashboard: Could not resolve user ID, redirecting to login");
+        header('Location: /login.php');
+        exit();
     }
 }
 

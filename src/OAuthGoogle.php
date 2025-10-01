@@ -68,9 +68,17 @@ class OAuthGoogle
                 ];
                 $ctx = stream_context_create($opts);
                 $userInfo = file_get_contents($this->userInfoUrl, false, $ctx);
-                $user = json_decode($userInfo, true);
-                error_log("User info: " . json_encode($user));
-                $_SESSION['user'] = $user;
+                $googleUser = json_decode($userInfo, true);
+                error_log("Google user info: " . json_encode($googleUser));
+                
+                // Create or get user from database
+                $user = User::createOrGetFromOAuth($googleUser);
+                error_log("Database user created/retrieved: ID=" . $user->getId());
+                
+                // Store user data in session with database ID
+                $_SESSION['user'] = $user->toArray();
+                error_log("Session user data: " . json_encode($_SESSION['user']));
+                
                 error_log("Redirecting to /index.php");
                 header('Location: /index.php');
                 exit();
